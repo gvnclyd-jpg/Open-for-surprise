@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nothing.</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;font-family:Arial,Helvetica,sans-serif}
+body{background:#fff;color:#111;overflow:hidden}
+.room{display:none;width:100%;height:100vh;min-height:100vh;position:relative}
+.room.active{display:flex}
+
+/* HOME */
+#home{align-items:center;justify-content:center;text-align:center}
+.homeText{font-size:clamp(20px,4vw,34px);line-height:1.55}
+.homeText strong{font-size:1.25em}
+#countdown{font-size:15px;color:#888;margin-top:15px}
+
+/* BLACK HOLE TRANSITION */
+#warp{background:#000;align-items:center;justify-content:center;overflow:hidden}
+.blackhole{width:40px;height:40px;border-radius:50%;background:#000;
+box-shadow:0 0 10px 5px #fff,0 0 30px 15px #6cf,0 0 70px 30px #36f;
+animation:hole 3.2s forwards}
+@keyframes hole{
+0%{width:40px;height:40px;opacity:0}
+15%{opacity:1}
+65%{width:55vw;height:55vw;box-shadow:0 0 40px 15px #fff,0 0 100px 40px #6cf,0 0 180px 70px #36f}
+100%{width:180vw;height:180vw;box-shadow:0 0 80px 20px #fff,0 0 180px 70px #6cf}
+}
+
+/* KEYS */
+#keys{background:#101010;color:#ffd84d;align-items:center;justify-content:center;overflow:auto;padding:25px}
+.keyGrid{width:min(1000px,95vw);display:grid;grid-template-columns:repeat(10,1fr);gap:8px}
+.key{border:0;background:transparent;font-size:clamp(20px,4vw,38px);padding:2px;cursor:pointer;transition:.12s}
+.key:hover{transform:scale(1.18)}
+.key:last-child{filter:none}
+.lifeReset{position:fixed;top:14px;left:14px;border:1px solid #888;background:#fff;color:#111;padding:9px 12px;border-radius:7px;cursor:pointer;font-weight:bold}
+
+/* QUIZ */
+#quiz{background:#f4f4f4;color:#111;align-items:center;justify-content:center;padding:20px}
+.quizBox{width:min(720px,94vw);background:#fff;border:1px solid #ccc;border-radius:16px;padding:25px;box-shadow:0 8px 30px #0002}
+.lives{font-size:27px;letter-spacing:4px}
+.progress{color:#777;font-size:14px}
+.question{font-size:clamp(20px,4vw,30px);font-weight:bold;margin:20px 0}
+.answers{display:grid;gap:10px}
+.answer{padding:14px;background:#f7f7f7;border:1px solid #bbb;border-radius:9px;cursor:pointer;font-size:16px;text-align:left}
+.answer:hover{background:#eaf7ff}
+.answer:disabled{cursor:default;opacity:.65}
+.feedback{min-height:25px;margin-top:13px;font-weight:bold}
+#secret{background:#080808;align-items:center;justify-content:center}
+.lock{font-size:9rem;cursor:pointer;animation:lockpulse 1.5s infinite}
+@keyframes lockpulse{50%{transform:scale(1.08);filter:drop-shadow(0 0 25px #fff)}}
+
+/* FINAL */
+#finalQuestion{background:#151515;color:#fff;align-items:center;justify-content:center;text-align:center;padding:20px}
+.finalBox{max-width:700px}
+.finalChoices{display:grid;gap:14px;margin-top:25px}
+.finalChoices button{font-size:20px;padding:17px;border:2px solid #777;border-radius:10px;cursor:pointer;background:#242424;color:#fff}
+.finalChoices button:hover{background:#333}
+
+/* LOSE */
+#lose{background:#000;color:#fff;align-items:center;justify-content:center;text-align:center;overflow:hidden}
+.loseHole{position:absolute;width:10px;height:10px;border-radius:50%;background:#000;box-shadow:0 0 15px #f00,0 0 40px #f00;animation:consume 5s linear forwards}
+@keyframes consume{to{width:180vmax;height:180vmax;box-shadow:0 0 40px #f00,0 0 100px #f00}}
+.loseContent{position:relative;z-index:2;opacity:0;animation:showLose 1s 5s forwards}
+@keyframes showLose{to{opacity:1}}
+.loseTitle{font-size:clamp(45px,10vw,110px);color:#ff1717;text-shadow:0 0 15px #f00,0 0 35px #f00}
+.try,.chance{margin-top:20px;background:transparent;border:0;color:#ff5555;font-size:18px;cursor:pointer;display:block;margin-left:auto;margin-right:auto}.chance{color:#fff;margin-top:14px}
+.quitText{height:25px;color:#fff;margin-top:12px}
+
+/* CREDITS */
+#credits{background:#000;color:#fff;align-items:center;justify-content:center;text-align:center}
+.creditRoll{animation:roll 12s linear forwards;position:absolute;top:100%;width:min(700px,90vw)}
+@keyframes roll{to{top:-120%}}
+.win{background:#fff;color:#111;align-items:center;justify-content:center;text-align:center}
+.win h1{font-size:clamp(35px,8vw,75px)}
+</style>
+</head>
+<body>
+
+<section id="home" class="room active">
+<div class="homeText">
+  <div><strong>nothing</strong></div>
+  <div>stay for 1 minute for a<br><strong>SURPRISE</strong></div>
+  <div id="countdown">01:00</div>
+</div>
+</section>
+
+<section id="warp" class="room"><div class="blackhole"></div></section>
+
+<section id="keys" class="room">
+<div class="keyGrid" id="keyGrid"></div>
+</section>
+
+<section id="quiz" class="room">
+<button class="lifeReset" onclick="resetAll()">(+1 LIFE)</button>
+<div class="quizBox">
+<div class="lives" id="lives">❤️❤️❤️</div>
+<div class="progress" id="progress"></div>
+<div class="question" id="question"></div>
+<div class="answers" id="answers"></div>
+<div class="feedback" id="feedback"></div>
+</div>
+</section>
+
+<section id="secret" class="room">
+<div class="lock" onclick="openFinal()">🔐</div>
+</section>
+
+<section id="finalQuestion" class="room">
+<div class="finalBox">
+<h1>Final Question</h1>
+<p>How many Dianne did Rick Prime kill?</p>
+<div class="finalChoices">
+<button id="finalInfinite" onclick="finalAnswer(false)">1st: infinite</button>
+<button id="finalOne" onclick="finalAnswer(true)">2nd: one</button>
+</div>
+</div>
+</section>
+
+<section id="lose" class="room">
+<div class="loseHole"></div>
+<div class="loseContent">
+<div class="loseTitle">YOU LOSE</div>
+<button class="try" onclick="tryAgain()">try again</button>
+<button class="chance" onclick="anotherChance()">ill give you another chance</button>
+<div class="quitText" id="quitText"></div>
+</div>
+</section>
+
+<section id="win" class="room">
+<div>
+<h1>YOU WON 🎉🎉</h1>
+<p>You actually waited, found the key, survived the quiz, and got the final answer.</p>
+<button onclick="location.reload()">play again</button>
+</div>
+</section>
+
+<section id="credits" class="room">
+<div class="creditRoll">
+<h1>THE END</h1>
+<p>A tiny game about patience, curiosity, and clicking suspicious things.</p>
+<p>Created for Gavin.</p>
+<p>Special thanks to the person who stayed for a whole minute.</p>
+<p>Director: The Mysterious Button</p>
+<p>Lead Investigator: You</p>
+<p>Key Department: 100% Keys</p>
+<p>Black Hole Department: Definitely Fine</p>
+<p>Thanks for playing.</p>
+</div>
+</section>
+
+<script>
+const rooms=["home","warp","keys","quiz","secret","finalQuestion","lose","win","credits"];
+function show(id){
+ rooms.forEach(x=>document.getElementById(x).classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+}
+
+let time=60;
+let timer=null;
+
+function startCountdown(){
+ if(timer) clearInterval(timer);
+ time=60;
+ document.getElementById("countdown").textContent="01:00";
+ timer=setInterval(()=>{
+  time--;
+  const m=String(Math.floor(time/60)).padStart(2,"0");
+  const s=String(time%60).padStart(2,"0");
+  document.getElementById("countdown").textContent=m+":"+s;
+  if(time<=0){
+   clearInterval(timer);
+   timer=null;
+   show("warp");
+   setTimeout(()=>show("keys"),3300);
+  }
+ },1000);
+}
+startCountdown();
+
+let chanceMode=false;
+function buildKeys(){
+ const grid=document.getElementById("keyGrid");
+ grid.innerHTML="";
+ for(let i=0;i<100;i++){
+   const b=document.createElement("button");
+   b.className="key";b.textContent="🔑";
+   if((!chanceMode && i===99) || (chanceMode && i===0))b.onclick=()=>startQuiz();
+   else b.onclick=()=>{};
+   grid.appendChild(b);
+ }
+}
+buildKeys();
+
+function resetAll(){location.reload()}
+
+const qsNormal=[
+ ["What is Morty's last name?","Smith",["Smith","Sanchez","Parker","Brown"]],
+ ["What is Rick's last name?","Sanchez",["Smith","Sanchez","Jones","Miller"]],
+ ["What is the name of Rick's portal device?","Portal Gun",["Portal Gun","Space Remote","Dimension Key","Time Gun"]],
+ ["What is Jerry's job in many versions of his life?","Unsuccessful ordinary worker",["Unsuccessful ordinary worker","Space captain","Scientist","President of Earth"]],
+ ["What is Mr. Meeseeks' famous phrase?","I'm Mr. Meeseeks! Look at me!",["I'm Mr. Meeseeks! Look at me!","Wubba lubba dub dub!","Get Schwifty!","Pickle Rick!"]],
+ ["What is Evil Morty's goal?","To escape the Central Finite Curve",["To escape the Central Finite Curve","To become Jerry","To destroy Earth only","To find a new portal gun"]],
+ ["What does Summer often do?","Gets involved in Rick and Morty's adventures",["Gets involved in Rick and Morty's adventures","Runs the Galactic Federation","Builds Mr. Meeseeks","Never leaves school"]],
+ ["What is Birdperson's name/title?","Birdperson",["Birdperson","Bird Rick","Phoenix Jerry","Space Morty"]],
+ ["What does Rick often call Morty?","Morty",["Morty","Jerry","Summer","Birdperson"]],
+ ["What does the Smith family live on?","Earth",["Earth","Mars","Citadel only","Pluto"]]
+];
+const qsChance=[
+ ["What is Rick's catchphrase?","Wubba lubba dub dub!",["Wubba lubba dub dub!","Get Schwifty!","Pickle Rick!","Show me what you got!"]],
+ ["Who is Morty's sister?","Summer",["Summer","Beth","Diane","Jessica"]],
+ ["What is Rick's grandson called?","Morty",["Morty","Jerry","Evil Rick","Birdperson"]],
+ ["What is the Citadel made for?","Ricks and Mortys",["Ricks and Mortys","Jerrys only","Aliens only","Birdpeople"]],
+ ["What creature says it wants to be Mr. Meeseeks?","Mr. Meeseeks",["Mr. Meeseeks","Birdperson","Squanchy","Krombopulos Michael"]],
+ ["What color is a typical portal?","Green",["Green","Red","Blue","Purple"]],
+ ["Who is Beth's husband?","Jerry",["Jerry","Rick","Morty","Birdperson"]],
+ ["What is Rick's favorite drink?","Alcohol",["Alcohol","Milk","Juice","Coffee"]],
+ ["Who is Evil Morty?","A Morty who became independent",["A Morty who became independent","Rick Prime","A robot","Jerry's clone"]],
+ ["What does Rick usually use to travel dimensions?","Portal Gun",["Portal Gun","Space Bus","Teleport Boots","Time Machine"]]
+];
+let qs=qsNormal;
+let qi=0,lives=3;
+
+function startQuiz(){qi=0;lives=3;qs=chanceMode?qsChance:qsNormal;show("quiz");renderQuestion()}
+function renderQuestion(){
+ document.getElementById("lives").textContent="❤️".repeat(lives)+"💔".repeat(3-lives);
+ document.getElementById("progress").textContent="Question "+(qi+1)+" of 10";
+ document.getElementById("question").textContent=qs[qi][0];
+ const box=document.getElementById("answers");box.innerHTML="";
+ document.getElementById("feedback").textContent="";
+ const answers=[...qs[qi][2]].sort(()=>Math.random()-.5);
+ answers.forEach(a=>{
+  const b=document.createElement("button");b.className="answer";b.textContent=a;
+  b.onclick=()=>answer(a===qs[qi][1]);
+  box.appendChild(b);
+ });
+}
+function answer(correct){
+ document.querySelectorAll(".answer").forEach(b=>b.disabled=true);
+ const f=document.getElementById("feedback");
+ if(correct){
+  f.textContent="Correct!";
+  f.style.color="green";
+  setTimeout(()=>{
+   qi++;
+   if(qi>=qs.length)show("secret");else renderQuestion();
+  },650);
+ }else{
+  lives--;
+  f.textContent="Wrong answer!";
+  f.style.color="crimson";
+  document.getElementById("lives").textContent="❤️".repeat(lives)+"💔".repeat(3-lives);
+  if(lives<=0){
+   setTimeout(()=>startLose(),650);
+  }else{
+   setTimeout(renderQuestion,700);
+  }
+ }
+}
+function openFinal(){
+ if(chanceMode){
+  document.getElementById("finalInfinite").onclick=()=>finalAnswer(true);
+  document.getElementById("finalOne").onclick=()=>finalAnswer(false);
+ }else{
+  document.getElementById("finalInfinite").onclick=()=>finalAnswer(false);
+  document.getElementById("finalOne").onclick=()=>finalAnswer(true);
+ }
+ show("finalQuestion")
+}
+function finalAnswer(correct){
+ if(correct)show("win");else startLose();
+}
+let tries=0;
+function startLose(){show("lose");tries=0;document.getElementById("quitText").textContent="";document.querySelector(".loseHole").style.animation="none";void document.querySelector(".loseHole").offsetWidth;document.querySelector(".loseHole").style.animation="consume 5s linear forwards"}
+function anotherChance(){
+ chanceMode=true;
+ tries=0;
+ buildKeys();
+ show("home");
+ document.querySelector("#home .homeText").innerHTML='<div><strong>nothing</strong></div><div>stay for 1 minute for a<br><strong>SECOND SURPRISE</strong></div><div id="countdown">01:00</div>';
+ setTimeout(startCountdown, 50);
+}
+function tryAgain(){
+ tries++;
+ if(tries>=5){
+  document.getElementById("quitText").textContent="this guy doesn't know when to quit";
+  setTimeout(()=>show("credits"),1400);
+ }else{
+  document.getElementById("quitText").textContent="Try again... ("+tries+"/5)";
+ }
+}
+</script>
+</body>
+</html>
